@@ -8,7 +8,7 @@ using namespace osg;
 using namespace osgGA;
 using namespace Vwr;
 
-CameraManipulator::CameraManipulator()
+Vwr::CameraManipulator::CameraManipulator()
 {
 	appConf = Util::ApplicationConfig::get();
 
@@ -28,11 +28,11 @@ CameraManipulator::CameraManipulator()
 	stop();
 }
 
-CameraManipulator::~CameraManipulator()
+Vwr::CameraManipulator::~CameraManipulator()
 {
 }
 
-void CameraManipulator::setNode(osg::Node* node)
+void Vwr::CameraManipulator::setNode(osg::Node* node)
 {
     _node = node;
     if (_node.get())
@@ -44,26 +44,26 @@ void CameraManipulator::setNode(osg::Node* node)
 }
 
 
-const osg::Node* CameraManipulator::getNode() const
+const osg::Node* Vwr::CameraManipulator::getNode() const
 {
     return _node.get();
 }
 
 
-osg::Node* CameraManipulator::getNode()
+osg::Node* Vwr::CameraManipulator::getNode()
 {
     return _node.get();
 }
 
 
-void CameraManipulator::home(double /*currentTime*/)
+void Vwr::CameraManipulator::home(double /*currentTime*/)
 {
     if (getAutoComputeHomePosition()) computeHomePosition();
     computePosition(_homeEye, _homeCenter, _homeUp);
     _thrown = false;
 }
 
-void CameraManipulator::home(const GUIEventAdapter& ea ,GUIActionAdapter& us)
+void Vwr::CameraManipulator::home(const GUIEventAdapter& ea ,GUIActionAdapter& us)
 {
     home(ea.getTime());
     us.requestRedraw();
@@ -71,20 +71,20 @@ void CameraManipulator::home(const GUIEventAdapter& ea ,GUIActionAdapter& us)
 }
 
 
-void CameraManipulator::init(const GUIEventAdapter& ,GUIActionAdapter& )
+void Vwr::CameraManipulator::init(const GUIEventAdapter& ,GUIActionAdapter& )
 {
     flushMouseEventStack();
 }
 
 
-void CameraManipulator::getUsage(osg::ApplicationUsage& usage) const
+void Vwr::CameraManipulator::getUsage(osg::ApplicationUsage& usage) const
 {
     usage.addKeyboardMouseBinding("Trackball: Space","Reset the viewing position to home");
     usage.addKeyboardMouseBinding("Trackball: +","When in stereo, increase the fusion distance");
     usage.addKeyboardMouseBinding("Trackball: -","When in stereo, reduce the fusion distance");
 }
 
-bool CameraManipulator::handle(const GUIEventAdapter& ea, GUIActionAdapter& us)
+bool Vwr::CameraManipulator::handle(const GUIEventAdapter& ea, GUIActionAdapter& us)
 {
     switch(ea.getEventType())
     {
@@ -139,7 +139,7 @@ bool CameraManipulator::handle(const GUIEventAdapter& ea, GUIActionAdapter& us)
     }
 }
 
-bool CameraManipulator::handleScroll(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
+bool Vwr::CameraManipulator::handleScroll(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
 {
 	addMouseEvent(ea);
 	if (calcMovement()) us.requestRedraw();
@@ -148,7 +148,7 @@ bool CameraManipulator::handleScroll(const osgGA::GUIEventAdapter& ea, osgGA::GU
 	return true;
 }
 
-bool CameraManipulator::handleRelease(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
+bool Vwr::CameraManipulator::handleRelease(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
 {
 	if (ea.getButtonMask()==0)
 	{
@@ -186,7 +186,7 @@ bool CameraManipulator::handleRelease(const osgGA::GUIEventAdapter& ea, osgGA::G
 	return true;
 }
 
-bool CameraManipulator::handlePush(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
+bool Vwr::CameraManipulator::handlePush(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
 {
 	if (ea.getButtonMask() == GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
 	{
@@ -218,7 +218,7 @@ bool CameraManipulator::handlePush(const osgGA::GUIEventAdapter& ea, osgGA::GUIA
 	}
 }
 
-bool CameraManipulator::handleFrame(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
+bool Vwr::CameraManipulator::handleFrame(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
 {
 	double current_frame_time = ea.getTime();
 
@@ -235,7 +235,7 @@ bool CameraManipulator::handleFrame(const osgGA::GUIEventAdapter& ea, osgGA::GUI
 	return false;
 }
 
-bool CameraManipulator::isMouseMoving()
+bool Vwr::CameraManipulator::isMouseMoving()
 {
     if (_ga_t0.get()==NULL || _ga_t1.get()==NULL) return false;
 
@@ -250,36 +250,36 @@ bool CameraManipulator::isMouseMoving()
 }
 
 
-void CameraManipulator::flushMouseEventStack()
+void Vwr::CameraManipulator::flushMouseEventStack()
 {
     _ga_t1 = NULL;
     _ga_t0 = NULL;
 }
 
 
-void CameraManipulator::addMouseEvent(const GUIEventAdapter& ea)
+void Vwr::CameraManipulator::addMouseEvent(const GUIEventAdapter& ea)
 {
     _ga_t1 = _ga_t0;
     _ga_t0 = &ea;
 }
 
-void CameraManipulator::setByMatrix(const osg::Matrixd& matrix)
+void Vwr::CameraManipulator::setByMatrix(const osg::Matrixd& matrix)
 {
     _center = osg::Vec3(0.0f,0.0f,-_distance)*matrix;
     _rotation = matrix.getRotate();
 }
 
-osg::Matrixd CameraManipulator::getMatrix() const
+osg::Matrixd Vwr::CameraManipulator::getMatrix() const
 {
     return osg::Matrixd::translate(0.0,0.0,_distance)*osg::Matrixd::rotate(_rotation)*osg::Matrixd::translate(_center);
 }
 
-osg::Matrixd CameraManipulator::getInverseMatrix() const
+osg::Matrixd Vwr::CameraManipulator::getInverseMatrix() const
 {
     return osg::Matrixd::translate(-_center)*osg::Matrixd::rotate(_rotation.inverse())*osg::Matrixd::translate(0.0,0.0,-_distance);
 }
 
-void CameraManipulator::computePosition(const osg::Vec3& eye,const osg::Vec3& center,const osg::Vec3& up)
+void Vwr::CameraManipulator::computePosition(const osg::Vec3& eye,const osg::Vec3& center,const osg::Vec3& up)
 {
 
     osg::Vec3 lv(center-eye);
@@ -302,7 +302,7 @@ void CameraManipulator::computePosition(const osg::Vec3& eye,const osg::Vec3& ce
 }
 
 
-bool CameraManipulator::calcMovement()
+bool Vwr::CameraManipulator::calcMovement()
 {
     // mouse scroll is only a single event
     if (_ga_t0.get()==NULL) return false;
@@ -435,7 +435,7 @@ bool CameraManipulator::calcMovement()
  * simple example, though, so that is left as an Exercise for the
  * Programmer.
  */
-void CameraManipulator::setTrackballSize(float size)
+void Vwr::CameraManipulator::setTrackballSize(float size)
 {
     _trackballSize = size;
      osg::clampBetweenRange(_trackballSize,0.1f,1.0f,"CameraManipulator::setTrackballSize(float)");
@@ -453,7 +453,7 @@ void CameraManipulator::setTrackballSize(float size)
  * It is assumed that the arguments to this routine are in the range
  * (-1.0 ... 1.0)
  */
-void CameraManipulator::trackball(osg::Vec3& axis,float& angle, float p1x, float p1y, float p2x, float p2y)
+void Vwr::CameraManipulator::trackball(osg::Vec3& axis,float& angle, float p1x, float p1y, float p2x, float p2y)
 {
     /*
      * First, figure out z-coordinates for projection of P1 and P2 to
@@ -502,7 +502,7 @@ axis = p2^p1;
  * Project an x,y pair onto a sphere of radius r OR a hyperbolic sheet
  * if we are away from the center of the sphere.
  */
-float CameraManipulator::tb_project_to_sphere(float r, float x, float y)
+float Vwr::CameraManipulator::tb_project_to_sphere(float r, float x, float y)
 {
     float d, t, z;
 
@@ -528,7 +528,7 @@ float CameraManipulator::tb_project_to_sphere(float r, float x, float y)
  * Metoda spomali pohyb na zaklade zdroja prijatej udalosti. 
  * 
  */
-bool CameraManipulator::handleKeyUp( const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter & us)
+bool Vwr::CameraManipulator::handleKeyUp( const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter & us)
 {
 	switch( ea.getKey() )
 	{
@@ -571,7 +571,7 @@ bool CameraManipulator::handleKeyUp( const osgGA::GUIEventAdapter& ea, osgGA::GU
  * Metoda zrychli pohyb na zaklade zdroja prijatej udalosti. 
  * 
  */
-bool CameraManipulator::handleKeyDown( const osgGA::GUIEventAdapter &ea, osgGA::GUIActionAdapter & )
+bool Vwr::CameraManipulator::handleKeyDown( const osgGA::GUIEventAdapter &ea, osgGA::GUIActionAdapter & )
 {
 	int i = ea.getKey();
 	switch( ea.getKey() )
@@ -628,7 +628,7 @@ bool CameraManipulator::handleKeyDown( const osgGA::GUIEventAdapter &ea, osgGA::
  * Funkcia vypocita poziciu kamery a zmensi rychlost pohybu.
  * 
  */
-void CameraManipulator::frame( const osgGA::GUIEventAdapter &ea, osgGA::GUIActionAdapter &aa )
+void Vwr::CameraManipulator::frame( const osgGA::GUIEventAdapter &ea, osgGA::GUIActionAdapter &aa )
 {
 	osgViewer::Viewer* viewer = dynamic_cast<osgViewer::Viewer*>( &aa );
 
@@ -678,7 +678,7 @@ void CameraManipulator::frame( const osgGA::GUIEventAdapter &ea, osgGA::GUIActio
  * 
  * Zastavi pohyb kamery.
  */
-void CameraManipulator::stop()
+void Vwr::CameraManipulator::stop()
 {
 	forwardSpeed = 0.0;
 	sideSpeed = 0.0;

@@ -85,8 +85,7 @@ public:
 
 
 
-CheckBoxList::CheckBoxList(QWidget *widget )
-:QComboBox(widget),m_DisplayText(0)
+QOSG::CheckBoxList::CheckBoxList(QWidget *widget ):QComboBox(widget),m_DisplayText((QChar *) 0)
 {
 	// set delegate items view 
 	view()->setItemDelegate(new CheckBoxListDelegate(this));
@@ -102,13 +101,13 @@ CheckBoxList::CheckBoxList(QWidget *widget )
 }
 
 
-CheckBoxList::~CheckBoxList()
+QOSG::CheckBoxList::~CheckBoxList()
 {
 	;
 }
 
 
-bool CheckBoxList::eventFilter(QObject *object, QEvent *event)
+bool QOSG::CheckBoxList::eventFilter(QObject *object, QEvent *event)
 {
 	// don't close items view after we release the mouse button
 	// by simple eating MouseButtonRelease in viewport of items view
@@ -120,7 +119,7 @@ bool CheckBoxList::eventFilter(QObject *object, QEvent *event)
 }
 
 
-void CheckBoxList::paintEvent(QPaintEvent *)
+void QOSG::CheckBoxList::paintEvent(QPaintEvent *)
 {
 	QStylePainter painter(this);
 	painter.setPen(palette().color(QPalette::Text));
@@ -141,12 +140,12 @@ void CheckBoxList::paintEvent(QPaintEvent *)
 }
 
 
-void CheckBoxList::SetDisplayText(QString text)
+void QOSG::CheckBoxList::SetDisplayText(QString text)
 {
 	m_DisplayText = text;
 }
 
-QString CheckBoxList::GetDisplayText() const
+QString QOSG::CheckBoxList::GetDisplayText() const
 {
 	return m_DisplayText;
 }
