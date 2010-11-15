@@ -348,8 +348,11 @@ void CoreWindow::removeMetaNodes()
 
 void CoreWindow::loadFile()
 {
-	QString fileName = QFileDialog::getOpenFileName(this,
-		tr("Open GraphML"), ".", tr("GraphML Files (*.graphml)"));
+	/*QString fileName = QFileDialog::getOpenFileName(this,
+		tr("Open GraphML"), ".", tr("GraphML Files (*.graphml)"));*/
+
+	QString fileName = "D:\\3dsoftviz\\resources\\veolia.graphml";
+
     Manager::GraphManager::getInstance()->loadGraph(fileName);
 
 	viewerWidget->getCameraManipulator()->home();

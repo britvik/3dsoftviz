@@ -16,8 +16,11 @@
 
 #include <osgGA/KeySwitchMatrixManipulator>
 #include <osg/Quat>
+#include <osgViewer/Viewer>
 
 #include "Util/ApplicationConfig.h"
+#include "Data/Node.h"
+#include "Math/CameraMath.h"
 
 using namespace osgGA;
 
@@ -141,6 +144,8 @@ namespace Vwr{
 		*  \return float maximum speed
 		*/
 		float getMaxSpeed() { return maxSpeed; }
+
+		void setNewPosition(osg::Vec3d targetNode, osg::Vec3d interestnode, QLinkedList<osg::ref_ptr<Data::Node> > * selectedCluster);
 
     protected:
 
@@ -426,9 +431,32 @@ namespace Vwr{
 		*  \return bool true, if handled
 		*/
 		bool handleKeyUp( const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us);
+
+		void computeStandardFrame(const osgGA::GUIEventAdapter &ea, osgGA::GUIActionAdapter &aa);
+
+		bool movingAutomatically;
+		bool automaticMovementInitialized;
+
+		osg::Vec3d cameraTargetPoint;
+		osg::Vec3d cameraInterestPoint;
+
+		double t1, t2;
+		double w1[3];
+		double w2[3];
+		
+		osg::Vec3d eye, center, up, cameraPosition, targetPoint;
+
+		QVector<osg::Vec3d> * cameraPositions;
+		QVector<osg::Vec3d> * targetPositions;
+
+		QLinkedList<osg::ref_ptr<Data::Node> > * selectedCluster;
+
+		static double EYE_MOVEMENT_SPEED;
+		static double TARGET_MOVEMENT_SPEED;
+
+		void alterWeights(osgViewer::Viewer* viewer, QLinkedList<osg::ref_ptr<Data::Node> > * selectedCluster);
+		void initAutomaticMovement(osgViewer::Viewer* viewer);
 	};
-
 }
-
 #endif
 

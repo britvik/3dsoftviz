@@ -8,6 +8,9 @@ using namespace osg;
 using namespace osgGA;
 using namespace Vwr;
 
+double Vwr::CameraManipulator::EYE_MOVEMENT_SPEED;
+double Vwr::CameraManipulator::TARGET_MOVEMENT_SPEED;
+
 Vwr::CameraManipulator::CameraManipulator()
 {
 	appConf = Util::ApplicationConfig::get();
@@ -24,6 +27,11 @@ Vwr::CameraManipulator::CameraManipulator()
 	speedDecelerationFactor = 0.4f;
 	maxSpeed = appConf->getValue("Viewer.CameraManipulator.MaxSpeed").toFloat();
 	speedEpsilon = 0.02f;
+
+	movingAutomatically = false;
+
+	EYE_MOVEMENT_SPEED = 0.005;
+	TARGET_MOVEMENT_SPEED = 0.005;
 
 	stop();
 }
@@ -632,6 +640,53 @@ void Vwr::CameraManipulator::frame( const osgGA::GUIEventAdapter &ea, osgGA::GUI
 {
 	osgViewer::Viewer* viewer = dynamic_cast<osgViewer::Viewer*>( &aa );
 
+	if(movingAutomatically)
+	{
+		if (!automaticMovementInitialized)
+			initAutomaticMovement(viewer);
+
+		if (t1 <= 1 || t2 <= 1)
+		{
+			if (t1 <= 1)
+			{
+				cameraPosition = CameraMath::getPointOnNextBezierCurve(t1, cameraPositions, w1);	
+				t1 += EYE_MOVEMENT_SPEED;
+			}
+
+			if (t2 <= 1)
+			{
+				targetPoint = CameraMath::getPointOnNextBezierCurve(t2, targetPositions, w2 );
+				t2 += TARGET_MOVEMENT_SPEED;
+			}
+
+			computePosition(cameraPosition, targetPoint, up);
+
+			if (t1 >= 1 && t2 >= 1)
+			{
+				viewer->getCamera()->getViewMatrixAsLookAt(_center,  osg::Vec3d(), osg::Vec3d());
+				_distance = 0;
+			}
+		}
+		else
+		{
+			if (_distance < 50)
+			{
+				_distance += 1;
+				computeStandardFrame(ea, aa);
+			}
+			else
+				movingAutomatically = false;
+		}
+	}
+	else
+	{
+		computeStandardFrame(ea, aa);
+	}
+}
+
+void Vwr::CameraManipulator::computeStandardFrame(const osgGA::GUIEventAdapter &ea, osgGA::GUIActionAdapter &aa)
+{
+	osgViewer::Viewer* viewer = dynamic_cast<osgViewer::Viewer*>( &aa );
 	double t1 = ea.getTime();
 
 	if( t0 == 0.0 )
@@ -653,7 +708,7 @@ void Vwr::CameraManipulator::frame( const osgGA::GUIEventAdapter &ea, osgGA::GUI
 
 	osg::Vec3d directionVec = center - eye;
 	osg::Vec3d sideVec = getSideVector(osg::Matrixd(_rotation)); /* direction * osg::Matrix::rotate(-M_PI * 0.5, upVector);*/
-	
+
 	_center += ((directionVec * forwardSpeed) + (sideVec * sideSpeed) + (up * verticalSpeed)) * dt;
 
 	if( decelerateSideRate )
@@ -671,6 +726,81 @@ void Vwr::CameraManipulator::frame( const osgGA::GUIEventAdapter &ea, osgGA::GUI
 	if (deceleratePitchRate)
 	{
 		pitchSpeed *= speedDecelerationFactor;
+	}
+}
+
+void Vwr::CameraManipulator::setNewPosition(osg::Vec3d cameraTargetPoint, osg::Vec3d cameraInterestPoint, QLinkedList<osg::ref_ptr<Data::Node> > * selectedCluster)
+{
+	movingAutomatically = true;
+	this->cameraTargetPoint = cameraTargetPoint;
+	this->cameraInterestPoint = cameraInterestPoint;
+	this->selectedCluster = selectedCluster;
+	automaticMovementInitialized = false;	
+}
+
+void Vwr::CameraManipulator::initAutomaticMovement(osgViewer::Viewer* viewer)
+{
+	t1 = t2 = 0;
+
+	viewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
+
+	cameraPositions = new QVector<osg::Vec3d>();
+	cameraPositions->push_back(eye);
+	cameraPositions->push_back(cameraInterestPoint);
+	cameraPositions->push_back(cameraTargetPoint);
+
+	w1[0] = 1;
+	w1[1] = -0.5;
+	w1[2] = 1;
+
+	targetPositions = new QVector<osg::Vec3d>();
+
+	targetPositions->push_back(_center);
+	targetPositions->push_back(eye);
+	targetPositions->push_back(cameraInterestPoint);
+
+	w2[0] = 1;
+	w2[1] = 0.5f;
+	w2[2] = 1;
+
+	alterWeights(viewer, selectedCluster);
+	automaticMovementInitialized = true;
+}
+
+void Vwr::CameraManipulator::alterWeights(osgViewer::Viewer* viewer, QLinkedList<osg::ref_ptr<Data::Node> > * selectedCluster)
+{
+	osg::ref_ptr<osg::Camera> camera = new osg::Camera(*(viewer->getCamera()));
+
+	float width = camera->getViewport()->width();
+	float height = camera->getViewport()->height();
+
+	while(true)
+	{
+		osg::Vec3d eyePosition = CameraMath::getPointOnNextBezierCurve(0.5f, cameraPositions, w1);
+		osg::Vec3d targetPosition = CameraMath::getPointOnNextBezierCurve(0.5f / (EYE_MOVEMENT_SPEED / TARGET_MOVEMENT_SPEED), targetPositions, w2);
+
+		camera->setViewMatrixAsLookAt(eyePosition, targetPosition, up);
+
+		QVector<osg::ref_ptr<Data::Node>> * extremes = CameraMath::getViewExtremes(camera, selectedCluster);
+		
+		osg::Matrixd& mv = camera->getViewMatrix();
+		osg::Matrixd& mp = camera->getProjectionMatrix();
+		osg::Matrixd mw = camera->getViewport()->computeWindowMatrix();
+
+		osg::Vec3d leftPosition = extremes->at(0)->getCurrentPosition() * mv * mp * mw;
+		osg::Vec3d rightPosition = extremes->at(1)->getCurrentPosition() * mv * mp * mw;
+		osg::Vec3d topPosition = extremes->at(2)->getCurrentPosition() * mv * mp * mw;
+		osg::Vec3d bottomPosition = extremes->at(3)->getCurrentPosition() * mv * mp * mw;
+		
+		if (leftPosition.x() < 10 
+			|| rightPosition.x() > width - 10 
+			|| topPosition.y() < 10 
+			|| bottomPosition.y() > height - 10)
+		{
+			w1[1] -= 0.0005f;
+		}
+		else 
+			break;
 	}
 }
 

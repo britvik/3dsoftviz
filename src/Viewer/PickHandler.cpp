@@ -4,6 +4,7 @@
 #include <osg/Projection>
 
 #include "Manager/Manager.h"
+#include "Math/CameraMath.h"
 
 using namespace Vwr;
 
@@ -370,7 +371,9 @@ bool PickHandler::doNodePick(osg::NodePath nodePath)
 	{
 		if (isAltPressed && pickMode == PickMode::NONE)
 		{
-			cameraManipulator->setCenter(n->getTargetPosition());
+			//cameraManipulator->setCenter(n->getTargetPosition());
+
+			cameraManipulator->setNewPosition(n->getCurrentPosition(), getSelectionCenter(false), getSelectedNodes());
 		}
 		else if (pickMode != PickMode::NONE)
 		{

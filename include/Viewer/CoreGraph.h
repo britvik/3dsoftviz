@@ -132,6 +132,8 @@ namespace Vwr
 			}
 		} 
 
+		osg::ref_ptr<osg::Camera> getCamera() { return camera; }
+
 
 		/**
 		*  \fn public  setEdgeLabelsVisible(bool visible)
