@@ -439,10 +439,12 @@ namespace Vwr{
 
 		osg::Vec3d cameraTargetPoint;
 		osg::Vec3d cameraInterestPoint;
+		osg::Vec3d weightPoint;
 
 		double t1, t2;
 		double w1[3];
 		double w2[3];
+		double targetDistance;
 		
 		osg::Vec3d eye, center, up, cameraPosition, targetPoint;
 
@@ -453,8 +455,10 @@ namespace Vwr{
 
 		static double EYE_MOVEMENT_SPEED;
 		static double TARGET_MOVEMENT_SPEED;
+		static double SCREEN_MARGIN;
 
 		void alterWeights(osgViewer::Viewer* viewer, QLinkedList<osg::ref_ptr<Data::Node> > * selectedCluster);
+		float alterCameraTargetPoint(osgViewer::Viewer* viewer);
 		void initAutomaticMovement(osgViewer::Viewer* viewer);
 	};
 }

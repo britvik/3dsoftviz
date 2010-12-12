@@ -1,5 +1,6 @@
 #include "Math/CameraMath.h"
 #include <osg/Camera>
+#include <cmath>
 
 osg::Vec3d CameraMath::getPointOnNextBezierCurve(double time, QVector<osg::Vec3d> * points, double weights[])
 {
@@ -98,4 +99,48 @@ QVector<osg::ref_ptr<Data::Node> > * CameraMath::getViewExtremes(osg::ref_ptr<os
 
 
 	return extremes;
+}
+
+osg::Vec3d CameraMath::projectOnScreen(osg::ref_ptr<osg::Camera> camera, osg::Vec3d point)
+{
+	osg::Matrixd& mv = camera->getViewMatrix();
+	osg::Matrixd& mp = camera->getProjectionMatrix();
+	osg::Matrixd mw = camera->getViewport()->computeWindowMatrix();
+
+	osg::Vec3d result = point * mv * mp * mw;
+
+	return result;
+}
+
+osg::Vec3d CameraMath::getPointOnVector(osg::Vec3d p1, osg::Vec3d p2, float distance)
+{	
+	//x = x1 + (x2-x1)*(d/D) = x1(1-(d/D)) + x2(d/D)
+	osg::Vec3d directionVec =  p1 - p2;
+	float distanceRatio = distance / directionVec.length();
+
+	return p1 * (1 - distanceRatio) + p2 * distanceRatio;
+}
+
+bool CameraMath::isInRect(osg::Vec3d point, float width, float height, float margin)
+{
+	if (point.x() < margin || point.x() >  width - margin || point.y() < margin || point.y() > height - margin)
+		return false;
+	else
+		return true;
+}
+
+bool CameraMath::isInFOV(osg::Vec3d point, osg::ref_ptr<osg::Camera> camera)
+{
+	double left, right, bottom, top, zNear, zFar;
+	camera->getProjectionMatrixAsFrustum(left, right, bottom, top, zNear, zFar);
+	
+	osg::Matrixd& mv = camera->getViewMatrix();
+	osg::Matrixd& mp = camera->getProjectionMatrix();
+	osg::Vec3d pView = point * mv * mp;
+	
+
+	if (pView.z() < 0.0)
+		return false;
+
+	return true;
 }

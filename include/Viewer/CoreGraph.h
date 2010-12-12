@@ -171,173 +171,42 @@ namespace Vwr
 
 	private:
 
-		/**
-		*  Vwr::EdgeGroup * edgesGroup
-		*  \brief edge group
-		*/
 		Vwr::EdgeGroup * edgesGroup;
-
-		/**
-		*  Vwr::EdgeGroup * qmetaEdgesGroup
-		*  \brief metaedge group
-		*/
 		Vwr::EdgeGroup * qmetaEdgesGroup;
-
-
-		/**
-		*  Vwr::NodeGroup * nodesGroup
-		*  \brief node group
-		*/
 		Vwr::NodeGroup * nodesGroup;
-
-		/**
-		*  Vwr::NodeGroup * qmetaNodesGroup
-		*  \brief metanode group
-		*/
 		Vwr::NodeGroup * qmetaNodesGroup;
-	
-
-		/**
-		*  Data::Graph * graph
-		*  \brief current graph
-		*/
+		
 		Data::Graph * graph;
 
-		/**
-		*  QMap<qlonglong,osg::ref_ptr<Data::Node> > * in_nodes
-		*  \brief graph nodes map
-		*/
+
 		QMap<qlonglong, osg::ref_ptr<Data::Node> > *in_nodes;
-
-		/**
-		*  QMap<qlonglong,osg::ref_ptr<Data::Edge> > * in_edges
-		*  \brief graph edges map
-		*/
 		QMap<qlonglong, osg::ref_ptr<Data::Edge> > *in_edges;
-
-		/**
-		*  QMap<qlonglong,osg::ref_ptr<Data::Node> > * qmetaNodes
-		*  \brief graph metanodes map
-		*/
 		QMap<qlonglong, osg::ref_ptr<Data::Node> > *qmetaNodes;
-
-		/**
-		*  QMap<qlonglong,osg::ref_ptr<Data::Edge> > * qmetaEdges
-		*  \brief graph metaedges map
-		*/
 		QMap<qlonglong, osg::ref_ptr<Data::Edge> > *qmetaEdges;
-		
 
-		/**
-		*  Util::ApplicationConfig * appConf
-		*  \brief application configuration
-		*/
 		Util::ApplicationConfig* appConf;
 
-
-		/**
-		*  \fn private  initEdgeLabels
-		*  \brief inits edge labels
-		*  \return osg::ref_ptr 
-		*/
 		osg::ref_ptr<osg::Group> initEdgeLabels();
-
-		/**
-		*  \fn private  initCustomNodes
-		*  \brief inits custom nodes
-		*  \return osg::ref_ptr 
-		*/
 		osg::ref_ptr<osg::Group> initCustomNodes();
 
-
-		/**
-		*  \fn private  createSkyBox
-		*  \brief creates sky
-		*  \return osg::ref_ptr skybox node
-		*/
 		osg::ref_ptr<osg::Node> createSkyBox();
 
-
-		/**
-		*  osg::ref_ptr camera
-		*  \brief current viewing camera
-		*/
 		osg::ref_ptr<osg::Camera> camera;
-
-		/**
-		*  osg::ref_ptr root
-		*  \brief root node
-		*/
 		osg::ref_ptr<osg::Group> root;
 
-
-		/**
-		*  bool nodesFreezed
-		*  \brief true, if nodes are freezed
-		*/
 		bool nodesFreezed;
 
-
-		/**
-		*  QLinkedList<osg::ref_ptr<osg::Node> > customNodeList
-		*  \brief list of custom nodes 
-		*/
 		QLinkedList<osg::ref_ptr<osg::Node> > customNodeList;
 
-
-		/**
-		*  \fn private  synchronize
-		*  \brief Synchronizes nodes and edges
-		*/
 		void synchronize();
-
-		/**
-		*  \fn private  cleanUp
-		*  \brief Cleans up memory
-		*/
 		void cleanUp();
 
-
-		/**
-		*  int backgroundPosition
-		*  \brief background node position
-		*/
 		int backgroundPosition;
-
-		/**
-		*  int nodesPosition
-		*  \brief nodes group position
-		*/
 		int nodesPosition;
-
-		/**
-		*  int edgesPosition
-		*  \brief edges group position
-		*/
 		int edgesPosition;
-
-		/**
-		*  int qmetaNodesPosition
-		*  \brief metanodes group position
-		*/
 		int qmetaNodesPosition;
-
-		/**
-		*  int qmetaEdgesPosition
-		*  \brief metaedges groups position
-		*/
 		int qmetaEdgesPosition;
-
-		/**
-		*  int labelsPosition
-		*  \brief labels group position
-		*/
 		int labelsPosition;
-
-		/**
-		*  int customNodesPosition
-		*  \brief custom nodes group position
-		*/
 		int customNodesPosition;
 	};
 }

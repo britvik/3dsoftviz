@@ -298,6 +298,21 @@ void CoreWindow::addMetaNode()
 	{
 		osg::Vec3 position = viewerWidget->getPickHandler()->getSelectionCenter(true); 
 
+		cout << "Visible: " << CameraMath::isInFOV(position, viewerWidget->getCamera()) << "\n";
+
+		osg::GraphicsContext * gc = viewerWidget->getCamera()->getGraphicsContext();
+		osgViewer::GraphicsWindow * gw = dynamic_cast<osgViewer::GraphicsWindow *>(gc);
+
+		int x, y, width, height;
+
+		gw->getWindowRectangle(x, y, width, height);
+
+		cout << width << " " << height << "\n";
+
+		osg::Vec3 p = CameraMath::projectOnScreen(viewerWidget->getCamera(), position);
+
+		cout << p.x() <<" "<<p.y() << " " << p.z() << " " << CameraMath::isInRect(p, width, height,50) << "\n";
+
 		osg::ref_ptr<Data::Node> metaNode = currentGraph->addNode("metaNode", currentGraph->getNodeMetaType(), position);	
 		QLinkedList<osg::ref_ptr<Data::Node> > * selectedNodes = viewerWidget->getPickHandler()->getSelectedNodes();
 
@@ -348,10 +363,10 @@ void CoreWindow::removeMetaNodes()
 
 void CoreWindow::loadFile()
 {
-	/*QString fileName = QFileDialog::getOpenFileName(this,
-		tr("Open GraphML"), ".", tr("GraphML Files (*.graphml)"));*/
+	QString fileName = QFileDialog::getOpenFileName(this,
+		tr("Open GraphML"), ".", tr("GraphML Files (*.graphml)"));
 
-	QString fileName = "D:\\3dsoftviz\\resources\\veolia.graphml";
+	//QString fileName = "D:\\3dsoftviz\\resources\\veolia.graphml";
 
     Manager::GraphManager::getInstance()->loadGraph(fileName);
 

@@ -33,8 +33,6 @@ Data::Graph* Manager::GraphManager::loadGraph(QString filepath)
 
     AppCore::Core::getInstance()->thr->pause();
 
-    // TODO presunut do samostatneho modulu pre spracovanie GraphML
-
     // ziskame graph element
     QDomElement rootElement;
     QDomNode graphElement;
