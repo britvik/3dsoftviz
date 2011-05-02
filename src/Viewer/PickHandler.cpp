@@ -1,5 +1,6 @@
 #include "Viewer/PickHandler.h"
 #include "Viewer/DataHelper.h"
+#include "Util/ElementSelector.h"
 #include <osg/MatrixTransform>
 #include <osg/Projection>
 
@@ -160,6 +161,16 @@ bool PickHandler::handleKeyDown( const osgGA::GUIEventAdapter& ea, osgGA::GUIAct
 	else if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Alt_L || ea.getKey() == osgGA::GUIEventAdapter::KEY_Alt_R)
 	{
 		isAltPressed = true;
+	}
+	else if(ea.getKey() == 'q')
+	{
+		Data::Graph * currentGraph = Manager::GraphManager::getInstance()->getActiveGraph();
+		Util::ElementSelector::randomElementSelector(currentGraph->getNodes(), currentGraph->getEdges(), appConf->getValue("Viewer.PickHandler.AutopickedNodes").toInt(), this);
+	}
+	else if(ea.getKey() == 'w')
+	{
+		Data::Graph * currentGraph = Manager::GraphManager::getInstance()->getActiveGraph();
+		Util::ElementSelector::weightedElementSelector(currentGraph->getNodes(), appConf->getValue("Viewer.PickHandler.AutopickedNodes").toInt(), this);
 	}
 
 	return false;
@@ -369,11 +380,34 @@ bool PickHandler::doNodePick(osg::NodePath nodePath)
 
 	if (n != NULL)
 	{
-		if (isAltPressed && pickMode == PickMode::NONE)
+		if (isAltPressed && pickMode == PickMode::NONE && !isShiftPressed)
 		{
-			//cameraManipulator->setCenter(n->getTargetPosition());
+			cameraManipulator->setCenter(n->getTargetPosition());
+		}
+		else if (isAltPressed && pickMode == PickMode::NONE && isShiftPressed)
+		{		
+			if (appConf->getValue("Viewer.PickHandler.SelectInterestPoints").toInt() == 1)
+			{
+				Data::Graph * currentGraph = Manager::GraphManager::getInstance()->getActiveGraph();
+				Util::ElementSelector::weightedElementSelector(currentGraph->getNodes(), appConf->getValue("Viewer.PickHandler.AutopickedNodes").toInt(), this);
+			}
 
-			cameraManipulator->setNewPosition(n->getCurrentPosition(), getSelectionCenter(false), getSelectedNodes());
+			bool wasEmpty = false;
+			if (pickedNodes.isEmpty())
+			{
+				pickedNodes.append(n);
+				wasEmpty = true;
+			}
+
+			if (appConf->getValue("Viewer.Display.CameraPositions").toInt() == 1)
+			{
+				n->setColor(osg::Vec4(0, 1, 0, 1));
+			}
+
+			cameraManipulator->setNewPosition(n->getCurrentPosition(), getSelectionCenter(false), getSelectedNodes()->toStdList(), getSelectedEdges()->toStdList());
+
+			if (wasEmpty)
+				pickedNodes.removeFirst();
 		}
 		else if (pickMode != PickMode::NONE)
 		{
@@ -408,12 +442,34 @@ bool PickHandler::doEdgePick(osg::NodePath nodePath, unsigned int primitiveIndex
 
 			if (e != NULL)
 			{
-				if (isAltPressed && pickMode == PickMode::NONE)
+				if (isAltPressed && pickMode == PickMode::NONE && !isShiftPressed)
 				{
 					osg::ref_ptr<osg::Vec3Array> coords = e->getCooridnates();
 
 					cameraManipulator->setCenter(DataHelper::getMassCenter(coords));
 					cameraManipulator->setDistance(Util::ApplicationConfig::get()->getValue("Viewer.PickHandler.PickedEdgeDistance").toFloat());
+				}
+				else if (isAltPressed && pickMode == PickMode::NONE && isShiftPressed)
+				{		
+					if (appConf->getValue("Viewer.PickHandler.SelectInterestPoints").toInt() == 1)
+					{
+						Data::Graph * currentGraph = Manager::GraphManager::getInstance()->getActiveGraph();
+						Util::ElementSelector::weightedElementSelector(currentGraph->getNodes(), appConf->getValue("Viewer.PickHandler.AutopickedNodes").toInt(), this);
+					}
+
+					bool wasEmpty = false;
+					if (pickedEdges.isEmpty())
+					{
+						pickedEdges.append(e);
+						wasEmpty = true;
+					}
+
+					osg::Vec3f edgeCenter = (e->getSrcNode()->getCurrentPosition() + e->getDstNode()->getCurrentPosition()) / 2;
+
+					cameraManipulator->setNewPosition(edgeCenter, getSelectionCenter(false), getSelectedNodes()->toStdList(), getSelectedEdges()->toStdList());
+
+					if (wasEmpty)
+						pickedEdges.removeFirst();
 				}
 				else if (pickMode != PickMode::NONE)
 				{
@@ -593,7 +649,7 @@ osg::Vec3 PickHandler::getSelectionCenter(bool nodesOnly)
 
 	while (ni != pickedNodes.constEnd()) 
 	{
-		coordinates->push_back((*ni)->getTargetPosition());
+		coordinates->push_back((*ni)->getCurrentPosition());
 		++ni;
 	}
 
@@ -602,7 +658,7 @@ osg::Vec3 PickHandler::getSelectionCenter(bool nodesOnly)
 	if (coordinates->size() > 0)
 		center = Vwr::DataHelper::getMassCenter(coordinates);
 
-	return center;
+	return center * scale;
 }
 
 void PickHandler::setSelectedNodesInterpolation(bool state)

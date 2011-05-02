@@ -3,6 +3,7 @@
 #include <osg/Notify>
 #include <osg/BoundsChecking>
 #include <osgViewer/Viewer>
+#include "Manager/Manager.h"
 
 using namespace osg;
 using namespace osgGA;
@@ -12,7 +13,7 @@ double Vwr::CameraManipulator::EYE_MOVEMENT_SPEED;
 double Vwr::CameraManipulator::TARGET_MOVEMENT_SPEED;
 double Vwr::CameraManipulator::SCREEN_MARGIN;
 
-Vwr::CameraManipulator::CameraManipulator()
+Vwr::CameraManipulator::CameraManipulator(Vwr::CoreGraph * coreGraph)
 {
 	appConf = Util::ApplicationConfig::get();
 
@@ -35,6 +36,7 @@ Vwr::CameraManipulator::CameraManipulator()
 	TARGET_MOVEMENT_SPEED = 0.005;
 	SCREEN_MARGIN = 200;
 
+	this->coreGraph = coreGraph;
 	stop();
 }
 
@@ -213,7 +215,9 @@ bool Vwr::CameraManipulator::handlePush(const osgGA::GUIEventAdapter& ea, osgGA:
 			_distance = 0;
 		}
 		else
+		{
 			_distance = lastDistance;
+		}
 
 		return true;
 	}
@@ -642,13 +646,17 @@ void Vwr::CameraManipulator::frame( const osgGA::GUIEventAdapter &ea, osgGA::GUI
 {
 	osgViewer::Viewer* viewer = dynamic_cast<osgViewer::Viewer*>( &aa );
 
+	// ak sme v rezime automatickeho pohybu
 	if(movingAutomatically)
 	{
+		// inicializujeme premenne
 		if (!automaticMovementInitialized)
 			initAutomaticMovement(viewer);
 
+		// dokym pohlad a pozicia neopisu celu trajektoriu
 		if (t1 <= 1 || t2 <= 1)
 		{
+			// ziskanie novych pozicii na krivke
 			if (t1 <= 1)
 			{
 				cameraPosition = CameraMath::getPointOnNextBezierCurve(t1, cameraPositions, w1);	
@@ -661,25 +669,67 @@ void Vwr::CameraManipulator::frame( const osgGA::GUIEventAdapter &ea, osgGA::GUI
 				t2 += TARGET_MOVEMENT_SPEED;
 			}
 
+
+			// aktualne pozicie kamery
+			osg::Vec3d eye;
+			osg::Vec3d center;
+			osg::Vec3d up;
+
+			viewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
+
+			// prepocitanie koordinatov kamerery s novymi hodnotami
 			computePosition(cameraPosition, targetPoint, up);
 
-			if (t1 >= 1 && t2 >= 1)
+			// zobrazenie trajektorie kamery
+			if (appConf->getValue("Viewer.Display.CameraPath").toInt() == 1)
 			{
-			//	_center = cameraTargetPoint;
-			//	_distance = targetDistance;
+				QLinkedList<osg::ref_ptr<osg::Node> > * list = coreGraph->getCustomNodeList();
+				osg::ref_ptr<osg::Group> group = new osg::Group;
+				osg::ref_ptr<osg::Geode> g1 = new osg::Geode;
+
+				g1->addDrawable(CameraMath::createAxis(eye, lastPosition));
+				g1->addDrawable(CameraMath::createAxis(targetPoint, lastTargetPoint, osg::Vec4d(1,0,0,1)));
+
+				group->addChild(g1);
+				lastPosition = eye;
+				lastTargetPoint = targetPoint;
+				list->push_back(group);
 			}
+
+			// vypis metriky do konzoly
+			if (appConf->getValue("Graph.Metrics.ViewMetrics").toInt() == 1)
+			{
+				computeViewMetrics(viewer, selectedCluster);
+			}
+
 		}
+
+		// ukoncenie pohybu
 		else
 		{
-// 			if (_distance < 0)
-// 			{
-// 				_distance += 1;
-// 				computeStandardFrame(ea, aa);
-// 			}
-// 			else
-				movingAutomatically = false;
+			movingAutomatically = false;
+
+			if (appConf->getValue("Viewer.Display.CameraPositions").toInt() == 1)
+			{
+				osg::Vec3d eye;
+				osg::Vec3d center;
+				osg::Vec3d up;
+
+				viewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
+
+				Data::Graph * g = Manager::GraphManager::getInstance()->getActiveGraph();
+				g->addNode("EndNode", g->getNodeMetaType(), eye);
+			}
+
+	//		osg::Vec3d eye;
+	//		osg::Vec3d center;
+	//		osg::Vec3d up;
+
+	//		viewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
+	//			cout << eye.x() << " " << eye.y() << " " << eye.z() << "\n";
 		}
 	}
+	// standardny frame
 	else
 	{
 		computeStandardFrame(ea, aa);
@@ -731,12 +781,28 @@ void Vwr::CameraManipulator::computeStandardFrame(const osgGA::GUIEventAdapter &
 	}
 }
 
-void Vwr::CameraManipulator::setNewPosition(osg::Vec3d cameraTargetPoint, osg::Vec3d cameraInterestPoint, QLinkedList<osg::ref_ptr<Data::Node> > * selectedCluster)
+void Vwr::CameraManipulator::setNewPosition(osg::Vec3d cameraTargetPoint, osg::Vec3d cameraInterestPoint, std::list<osg::ref_ptr<Data::Node> > selectedCluster, std::list<osg::ref_ptr<Data::Edge> > selectedEdges)
 {
 	movingAutomatically = true;
 	this->cameraTargetPoint = cameraTargetPoint;
 	this->cameraInterestPoint = cameraInterestPoint;
+
+	//cout << "Camera targetPoint: " << cameraTargetPoint.x() << " " << cameraTargetPoint.y() << " " << cameraTargetPoint.z() << "\n";
+	//cout << "Camera interest targetPoint: " << cameraInterestPoint.x() << " " << cameraInterestPoint.y() << " " << cameraInterestPoint.z() << "\n";
+
+	std::list<osg::ref_ptr<Data::Edge> >::iterator i;
+
+	// prida hrany medzi body zaujmu
+	for (i = selectedEdges.begin(); i != selectedEdges.end(); ++i)
+	{
+		selectedCluster.push_back((*i)->getSrcNode());
+		selectedCluster.push_back((*i)->getDstNode());
+	}
+
+	selectedCluster.unique();
+
 	this->selectedCluster = selectedCluster;
+
 	automaticMovementInitialized = false;	
 }
 
@@ -744,16 +810,26 @@ void Vwr::CameraManipulator::initAutomaticMovement(osgViewer::Viewer* viewer)
 {
 	t1 = t2 = 0;
 
+	osg::Vec3d eye;
+	osg::Vec3d center;
+	osg::Vec3d up;
+
 	viewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
+	
+	this->lastPosition = originalEyePosition = eye;
+	this->lastTargetPoint = center;
+
+	float scale = appConf->getValue("Viewer.Display.NodeDistanceScale").toFloat();
 
 	weightPoint = (eye + cameraInterestPoint + cameraTargetPoint)/3;
 	targetDistance = alterCameraTargetPoint(viewer);
 
 	cameraPositions = new QVector<osg::Vec3d>();
-	cameraPositions->push_back(eye);
+	cameraPositions->push_back(originalEyePosition);
 	cameraPositions->push_back(cameraInterestPoint);
 	cameraPositions->push_back(cameraTargetPoint);
 
+	// vahy kontrolnych bodov pre trajektoriu kamery
 	w1[0] = 1;
 	w1[1] = -0.1;
 	w1[2] = 1;
@@ -764,43 +840,64 @@ void Vwr::CameraManipulator::initAutomaticMovement(osgViewer::Viewer* viewer)
 	targetPositions->push_back(cameraInterestPoint);
 	targetPositions->push_back(weightPoint);
 
+	// vahy kontrolnych bodov pre trajektriu pohladu
 	w2[0] = 1;
 	w2[1] = 0.5f;
 	w2[2] = 1;
 
+	// uprava vah aby boli viditelne vsetky body zaujmu
 	alterWeights(viewer, selectedCluster);
+
+	// zobrazenie kontornych bodov
+	if (appConf->getValue("Viewer.Display.CameraPositions").toInt() == 1)
+	{
+		Data::Graph * g = Manager::GraphManager::getInstance()->getActiveGraph();
+
+		g->addNode("centerNode", g->getNodeMetaType(), center)->setColor(osg::Vec4(0, 0.5, 1, 0.5));
+		g->addNode("startNode", g->getNodeMetaType(), originalEyePosition / scale);
+		g->addNode("interestPoint", g->getNodeMetaType(), cameraInterestPoint / scale)->setColor(osg::Vec4(0, 1, 1, 1));
+		g->addNode("weigthPoint", g->getNodeMetaType(), weightPoint)->setColor(osg::Vec4(0, 0.5, 1, 1));
+	}
+
 	automaticMovementInitialized = true;
 }
 
 float Vwr::CameraManipulator::alterCameraTargetPoint(osgViewer::Viewer* viewer)
 {
-	//osg::ref_ptr<osg::Camera> camera = new osg::Camera(*(viewer->getCamera()), CopyOp::DEEP_COPY_ALL);
-	osg::ref_ptr<osg::Camera> camera = viewer->getCamera();
+	osg::ref_ptr<osg::Camera> camera = new osg::Camera(*(viewer->getCamera()), CopyOp::DEEP_COPY_ALL);
+	//osg::ref_ptr<osg::Camera> camera = viewer->getCamera();
 
 	int width = camera->getViewport()->width();
 	int height = camera->getViewport()->height();
 
+	osg::Vec3d basicVec = cameraTargetPoint - weightPoint;
 	float scale = appConf->getValue("Viewer.Display.NodeDistanceScale").toFloat();
 
-	osg::Vec3d basicVec = cameraTargetPoint - weightPoint;
-	
 	// minimum distance from center
-	float dist = basicVec.length() + 50;
+	float dist = basicVec.length() + 50 * scale;
 	
 	osg::Vec3d eyePosition;
 
+	osg::Vec3d eye;
+	osg::Vec3d center;
+	osg::Vec3d up;
+
+	viewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
+
+	// move camera target point backwards until all interest points can be seen
 	while(true)
 	{
-		eyePosition = CameraMath::getPointOnVector(weightPoint, cameraTargetPoint, dist) * scale;
+		eyePosition = CameraMath::getPointOnVector(weightPoint, cameraTargetPoint, dist);
 		camera->setViewMatrixAsLookAt(eyePosition, weightPoint, up);
 
-		osg::Vec3d eyeScr = CameraMath::projectOnScreen(camera, eye);
+		osg::Vec3d eyeScr = CameraMath::projectOnScreen(camera, originalEyePosition);
 		osg::Vec3d cameraInterestPointScr = CameraMath::projectOnScreen(camera, cameraInterestPoint);
+
+		//cout << "eyeScr: " << eyeScr.x() << " " << eyeScr.y() << "\n";
+		//cout << "cameraInterestPointScr: " << cameraInterestPointScr.x() << " " << cameraInterestPointScr.y() << "\n";
 
 		bool onScreen1 = CameraMath::isInRect(eyeScr, width, height, SCREEN_MARGIN);
 		bool onScreen2 = CameraMath::isInRect(cameraInterestPointScr, width, height, SCREEN_MARGIN);
-
-		cout << cameraInterestPointScr.x() << ' ' << cameraInterestPointScr.y() << ' ' << cameraInterestPointScr.z() << '\n';
 
 		if (!(onScreen1 && onScreen2))
 		{
@@ -809,34 +906,43 @@ float Vwr::CameraManipulator::alterCameraTargetPoint(osgViewer::Viewer* viewer)
 		else
 			break;
 	}
-
-	osg::Vec3d point = CameraMath::projectOnScreen(camera, cameraInterestPoint);
-	cout << point.x() << ' ' << point.y() << ' ' << point.z() << '\n';
-
 	cameraTargetPoint = eyePosition;
+
+	/*cout << "Altered target: " << eyePosition.x() << " " << eyePosition.y() << " " << eyePosition.z() << "\n";*/
 
 	return dist;
 }
 
-void Vwr::CameraManipulator::alterWeights(osgViewer::Viewer* viewer, QLinkedList<osg::ref_ptr<Data::Node> > * selectedCluster)
+void Vwr::CameraManipulator::alterWeights(osgViewer::Viewer* viewer, std::list<osg::ref_ptr<Data::Node> > selectedCluster)
 {
 	osg::ref_ptr<osg::Camera> camera = new osg::Camera(*(viewer->getCamera()), CopyOp::DEEP_COPY_ALL);
 
 	int width = camera->getViewport()->width();
 	int height = camera->getViewport()->height();
 
+	osg::Vec3d eye;
+	osg::Vec3d center;
+	osg::Vec3d up;
+
+	// get initial camera position
+	camera->getViewMatrixAsLookAt(eye, center, up);
+
+	// alter weights until whole cluster is seen
 	while(true)
 	{
+		// get position and orientation in t = 0.5
 		osg::Vec3d eyePosition = CameraMath::getPointOnNextBezierCurve(0.5f, cameraPositions, w1);
 		osg::Vec3d targetPosition = CameraMath::getPointOnNextBezierCurve(0.5f / (EYE_MOVEMENT_SPEED / TARGET_MOVEMENT_SPEED), targetPositions, w2);
 
 		camera->setViewMatrixAsLookAt(eyePosition, targetPosition, up);
 
+		// get cluster nodes in extreme positions in t = 0.5
 		QVector<osg::ref_ptr<Data::Node>> * extremes = CameraMath::getViewExtremes(camera, selectedCluster);
 		
 		bool onScreen = true;
 
-		for (int x = 0; x < 4; x++)
+		// check for visibility of extremes
+		for (int x = 0; x < 4; x++) 
 		{
 			onScreen &= CameraMath::isInRect(CameraMath::projectOnScreen(camera, extremes->at(x)->getCurrentPosition()), width, height, SCREEN_MARGIN);
 		}
@@ -860,4 +966,21 @@ void Vwr::CameraManipulator::stop()
 	sideSpeed = 0.0;
 	verticalSpeed = 0.0;
 	pitchSpeed = 0.0;
+}
+
+void Vwr::CameraManipulator::computeViewMetrics(osgViewer::Viewer* viewer, std::list<osg::ref_ptr<Data::Node> > selectedCluster)
+{
+	int cnt = 0;
+
+	std::list<osg::ref_ptr<Data::Node> >::iterator i;
+
+	for (i = selectedCluster.begin(); i != selectedCluster.end(); ++i)
+	{
+		if (CameraMath::isInRect(CameraMath::projectOnScreen(viewer->getCamera(), (*i)->getCurrentPosition()), viewer->getCamera()->getViewport()->width(), viewer->getCamera()->getViewport()->height(), 0))
+		{
+			cnt++;
+		}
+	}
+
+	cout << "Currently visible: " << cnt << " nodes\n";
 }

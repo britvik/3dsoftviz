@@ -6,7 +6,7 @@
 #include "Manager/Manager.h"
 #include "Model/GraphDAO.h"
 #include "Util/ApplicationConfig.h"
-
+#include "Math/GraphMetrics.h"
 
 Manager::GraphManager * Manager::GraphManager::manager;
 
@@ -295,6 +295,8 @@ Data::Graph* Manager::GraphManager::loadGraph(QString filepath)
         }
         this->activeGraph = newGraph;
 
+		GraphMetrics::computeGraphMetrics(activeGraph);
+
         // pridame layout grafu
         Data::GraphLayout* gLay = newGraph->addLayout("new Layout");
         newGraph->selectLayout(gLay);
@@ -310,6 +312,7 @@ Data::Graph* Manager::GraphManager::loadGraph(QString filepath)
 
     return NULL;
 }
+
 
 void Manager::GraphManager::saveGraph(Data::Graph* graph)
 {

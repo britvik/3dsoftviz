@@ -1,5 +1,6 @@
 #include "Math/CameraMath.h"
 #include <osg/Camera>
+#include <osg/LineWidth>
 #include <cmath>
 
 osg::Vec3d CameraMath::getPointOnNextBezierCurve(double time, QVector<osg::Vec3d> * points, double weights[])
@@ -47,9 +48,9 @@ int CameraMath::factorial( int n )
 		return n * factorial( n - 1 );
 }
 
-QVector<osg::ref_ptr<Data::Node> > * CameraMath::getViewExtremes(osg::ref_ptr<osg::Camera> camera, QLinkedList<osg::ref_ptr<Data::Node> > * selectedCluster)
+QVector<osg::ref_ptr<Data::Node> > * CameraMath::getViewExtremes(osg::ref_ptr<osg::Camera> camera, std::list<osg::ref_ptr<Data::Node> > selectedCluster)
 {
-	osg::Matrixd mv = camera->getViewMatrix();
+ 	osg::Matrixd mv = camera->getViewMatrix();
 	osg::Matrixd mp = camera->getProjectionMatrix();
 	osg::Matrixd mw = camera->getViewport()->computeWindowMatrix();
 	
@@ -59,18 +60,22 @@ QVector<osg::ref_ptr<Data::Node> > * CameraMath::getViewExtremes(osg::ref_ptr<os
 
 	for (int x = 0; x < 4; x++)
 	{
-		extremes->push_back(selectedCluster->first());
+		extremes->push_back(selectedCluster.front());
 	}
 
-	osg::Vec3d p = selectedCluster->first()->getCurrentPosition();
+	float scale = Util::ApplicationConfig::get()->getValue("Viewer.Display.NodeDistanceScale").toFloat();
 
+	osg::Vec3d p = selectedCluster.front()->getCurrentPosition() * scale;
+
+	// get initial onscreen position
 	leftPosition = rightPosition = topPosition = bottomPosition = p * mv * mp * mw;
 
-	QLinkedList<osg::ref_ptr<Data::Node> >::iterator i;
+	std::list<osg::ref_ptr<Data::Node> >::iterator i;
 
-	for (i = selectedCluster->begin(); i != selectedCluster->end(); ++i)
+	// find onscreen extremes in cluster
+	for (i = selectedCluster.begin(); i != selectedCluster.end(); ++i)
 	{
-		osg::Vec3d position = (*i)->getCurrentPosition() * mv * mp * mw;
+		osg::Vec3d position = (*i)->getCurrentPosition() * scale * mv * mp * mw;
 
 		if (position.x() < leftPosition.x())
 		{
@@ -103,11 +108,13 @@ QVector<osg::ref_ptr<Data::Node> > * CameraMath::getViewExtremes(osg::ref_ptr<os
 
 osg::Vec3d CameraMath::projectOnScreen(osg::ref_ptr<osg::Camera> camera, osg::Vec3d point)
 {
-	osg::Matrixd& mv = camera->getViewMatrix();
-	osg::Matrixd& mp = camera->getProjectionMatrix();
+	osg::Matrixd mv = camera->getViewMatrix();
+	osg::Matrixd mp = camera->getProjectionMatrix();
 	osg::Matrixd mw = camera->getViewport()->computeWindowMatrix();
 
-	osg::Vec3d result = point * mv * mp * mw;
+	osg::Vec3d result = point * mv;
+	result = result * mp;
+	result = result * mw;
 
 	return result;
 }
@@ -144,3 +151,36 @@ bool CameraMath::isInFOV(osg::Vec3d point, osg::ref_ptr<osg::Camera> camera)
 
 	return true;
 }
+
+osg::Drawable* CameraMath::createAxis(const osg::Vec3& corner,const osg::Vec3& dir, osg::Vec4 color)
+{
+    // set up the Geometry.
+    osg::Geometry* geom = new osg::Geometry;
+
+    osg::Vec3Array* coords = new osg::Vec3Array(2);
+    (*coords)[0] = corner;
+    (*coords)[1] = dir;
+
+    geom->setVertexArray(coords);
+
+	// set colors
+     osg::Vec4Array* clr = new osg::Vec4Array(2);
+    (*clr)[0] = color;
+    (*clr)[1] = color;
+    
+    geom->setColorArray(clr);
+	geom->setColorBinding(osg::Geometry::BIND_PER_PRIMITIVE);
+    
+    geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES,0,2));
+    
+	// set line parameters
+    osg::StateSet* stateset = new osg::StateSet;
+    osg::LineWidth* linewidth = new osg::LineWidth();
+    linewidth->setWidth(4.0f);
+    stateset->setAttributeAndModes(linewidth,osg::StateAttribute::ON);
+    stateset->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
+    geom->setStateSet(stateset);
+    
+    return geom;
+}
+

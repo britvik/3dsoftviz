@@ -169,6 +169,11 @@ namespace Vwr
 			qmetaNodesGroup->freezeNodePositions();
 		}
 
+		Vwr::NodeGroup * getNodesGroup() { return nodesGroup; }
+		Vwr::NodeGroup * getMetaNodesGroup() { return qmetaNodesGroup; }
+		Vwr::EdgeGroup * getEdgesGroup() { return edgesGroup; }
+		Vwr::EdgeGroup * getMetaEdgesGroup() { return qmetaEdgesGroup; }
+
 	private:
 
 		Vwr::EdgeGroup * edgesGroup;

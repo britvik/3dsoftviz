@@ -119,7 +119,6 @@ namespace Manager
                 */
                 GraphManager();
 
-
                 /**
                 *  Manager::GraphManager * manager
                 *  \brief singleton object

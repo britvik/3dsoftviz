@@ -21,10 +21,13 @@
 #include "Util/ApplicationConfig.h"
 #include "Data/Node.h"
 #include "Math/CameraMath.h"
+#include "Viewer/CoreGraph.h"
 
 using namespace osgGA;
 
 namespace Vwr{
+
+	class CoreGraph;
 
 	/**
 	*  \class CameraManipulator
@@ -35,9 +38,9 @@ namespace Vwr{
 	*	This class is basically extended TrackballManipulator class with new functionality.
 	*/
 	class CameraManipulator : public KeySwitchMatrixManipulator
-{
+	{
     public:
-        CameraManipulator();
+        CameraManipulator(Vwr::CoreGraph * coreGraph);
 
         virtual const char* className() const { return "Trackball"; }
 
@@ -145,7 +148,7 @@ namespace Vwr{
 		*/
 		float getMaxSpeed() { return maxSpeed; }
 
-		void setNewPosition(osg::Vec3d targetNode, osg::Vec3d interestnode, QLinkedList<osg::ref_ptr<Data::Node> > * selectedCluster);
+		void setNewPosition(osg::Vec3d cameraTargetPoint, osg::Vec3d cameraInterestPoint, std::list<osg::ref_ptr<Data::Node> > selectedCluster, std::list<osg::ref_ptr<Data::Edge> > selectedEdges);
 
     protected:
 
@@ -432,34 +435,166 @@ namespace Vwr{
 		*/
 		bool handleKeyUp( const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us);
 
+		/**
+		*  \fn private  computeStandardFrame(const osgGA::GUIEventAdapter &ea, osgGA::GUIActionAdapter &aa)
+		*  \brief standard frame computation
+		*  \param  ea     event adapter
+		*  \param  us     action adapter
+		*/
 		void computeStandardFrame(const osgGA::GUIEventAdapter &ea, osgGA::GUIActionAdapter &aa);
 
+		/**
+		*  bool movingAutomatically
+		*  \brief automatic movement flag
+		*/
 		bool movingAutomatically;
+
+		/**
+		*  bool automaticMovementInitialized
+		*  \brief automatic movement initialized flag
+		*/
 		bool automaticMovementInitialized;
 
+		/**
+		*  osg::Vec3d cameraTargetPoint
+		*  \brief camera target point
+		*/
 		osg::Vec3d cameraTargetPoint;
+
+		/**
+		*  osg::Vec3d cameraInterestPoint
+		*  \brief camera interest point
+		*/
 		osg::Vec3d cameraInterestPoint;
+		
+		/**
+		*  osg::Vec3d weightPoint
+		*  \brief weigth point
+		*/
 		osg::Vec3d weightPoint;
 
+		/**
+		*  double t1, t2
+		*  \brief time
+		*/
 		double t1, t2;
+
+		/**
+		*  double w1[3]
+		*  \brief camera position control points weigths
+		*/
 		double w1[3];
+
+		/**
+		*  double w2[3]
+		*  \brief camera target point control points weigths
+		*/
 		double w2[3];
+
+		/**
+		*  double targetDistance
+		*  \brief target distance of camera from center
+		*/
 		double targetDistance;
 		
-		osg::Vec3d eye, center, up, cameraPosition, targetPoint;
+		/**
+		*  osg::Vec3d originalEyePosition
+		*  \brief eye position at the beginning of movement
+		*/
+		osg::Vec3d originalEyePosition;
+		
+		/**
+		*  osg::Vec3d cameraPosition
+		*  \brief current camera position
+		*/
+		osg::Vec3d cameraPosition;
 
+		/**
+		*  osg::Vec3d targetPoint
+		*  \brief current camera target point
+		*/
+		osg::Vec3d targetPoint;
+
+		/**
+		*  QVector<osg::Vec3d> * cameraPositions
+		*  \brief control points for camera position curve
+		*/
 		QVector<osg::Vec3d> * cameraPositions;
+
+		/**
+		*  QVector<osg::Vec3d> * targetPositions
+		*  \brief control points for camera target curve
+		*/
 		QVector<osg::Vec3d> * targetPositions;
 
-		QLinkedList<osg::ref_ptr<Data::Node> > * selectedCluster;
+		/**
+		*  std::list<osg::ref_ptr<Data::Node> > selectedCluster
+		*  \brief selected nodes
+		*/
+		std::list<osg::ref_ptr<Data::Node> > selectedCluster;
 
+		/**
+		*  static double EYE_MOVEMENT_SPEED
+		*  \brief eye speed
+		*/
 		static double EYE_MOVEMENT_SPEED;
+		
+		/**
+		*  static double TARGET_MOVEMENT_SPEED
+		*  \brief target speed
+		*/
 		static double TARGET_MOVEMENT_SPEED;
+		
+		/**
+		*  static double SCREEN_MARGIN
+		*  \brief minimum distance of selected cluster from screen in t=0.5
+		*/
 		static double SCREEN_MARGIN;
 
-		void alterWeights(osgViewer::Viewer* viewer, QLinkedList<osg::ref_ptr<Data::Node> > * selectedCluster);
+		/**
+		*  \fn private  alterWeights(osgViewer::Viewer* viewer, std::list<osg::ref_ptr<Data::Node> > selectedCluster)
+		*  \brief alter control point weigths
+		*  \param  viewer     viewer
+		*  \param  selectedCluster     selected nodes
+		*/
+		void alterWeights(osgViewer::Viewer* viewer, std::list<osg::ref_ptr<Data::Node> > selectedCluster);
+		
+		/**
+		*  \fn private  alterCameraTargetPoint(osgViewer::Viewer* viewer)
+		*  \brief moves camera target point to see all important nodes
+		*  \param  viewer     viewer
+		*  \return float distance from center
+		*/
 		float alterCameraTargetPoint(osgViewer::Viewer* viewer);
+
+		/**
+		*  \fn private  initAutomaticMovement(osgViewer::Viewer* viewer)
+		*  \brief inits automatic movement
+		*  \param  viewer     viewer
+		*/
 		void initAutomaticMovement(osgViewer::Viewer* viewer);
+
+		/**
+		*  \fn private  computeViewMetrics(osgViewer::Viewer* viewer, std::list<osg::ref_ptr<Data::Node> > selectedCluster)
+		*  \brief compute viewe metrics
+		*  \param  viewer     viewer
+		*  \param  selectedCluster     selected nodes
+		*/
+		void computeViewMetrics(osgViewer::Viewer* viewer, std::list<osg::ref_ptr<Data::Node> > selectedCluster);
+
+		/**
+		*  osg::Vec3 lastPosition
+		*  \brief last camera position
+		*/
+		osg::Vec3 lastPosition;
+
+		/**
+		*  osg::Vec3 lastTargetPoint
+		*  \brief last target point position
+		*/
+		osg::Vec3 lastTargetPoint;
+		
+		Vwr::CoreGraph * coreGraph;
 	};
 }
 #endif
