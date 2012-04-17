@@ -9,11 +9,19 @@
 
 #include <vector>
 #include <string>
+#include <osg/Vec3f>
 #include "Data/Type.h"
 #include "Data/Edge.h"
 #include <QMap>
 #include <QString>
 #include <QTextStream>
+
+#include <osg/Geode>
+#include <osg/Geometry>
+#include <osg/BlendFunc>
+#include <osg/Depth>
+#include <osg/CullFace>
+#include <osgText/Text>
 
 namespace Data
 {
@@ -438,6 +446,21 @@ namespace Data
 		*/
 		void setSettings(QMap<QString, QString> * val) { settings = val; }
 
+		float getNodeDegree() { return nodeDegree; }
+		void setNodeDegree(float nodeDegree) { this->nodeDegree = nodeDegree; }
+		
+		float getNodeCloseness() { return nodeCloseness; }
+		void setNodeCloseness(float nodeCloseness) { this->nodeCloseness = nodeCloseness; }
+
+		float getNodeBetweeness() { return nodeBetweeness; }
+		void setNodeBetweeness(float nodeBetweeness) { this->nodeBetweeness = nodeBetweeness; }
+
+		float getOverallWeight() { return overallWeight; }
+		void setOverallWeight(float overallWeight) { this->overallWeight = overallWeight; }
+
+		bool isNodeMatched() { return nodeMatched; }
+		void setNodeMatched(bool nodeMatched) { this->nodeMatched = nodeMatched; }
+		
 	private:
 
         /**
@@ -624,6 +647,13 @@ namespace Data
 		*  \brief Square drawable
 		*/
 		//osg::ref_ptr<osg::Drawable> square;
+
+		float nodeDegree;
+		float nodeCloseness;
+		float nodeBetweeness;
+		bool nodeMatched;
+
+		float overallWeight;
 
 	protected:
 

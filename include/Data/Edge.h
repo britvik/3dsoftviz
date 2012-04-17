@@ -20,6 +20,13 @@
 #include <osgText/Text>
 #include <osgText/FadeText>*/
 
+#include <osg/PrimitiveSet>
+#include <osg/Camera>
+#include <osgText/Text>
+#include <osgText/FadeText>
+
+
+#include "Util/ApplicationConfig.h"
 
 namespace Data
 {
@@ -323,6 +330,8 @@ namespace Data
 		*  \param [in, out]  val QMap<QString,QString> *    new settings
 		*/
 		void setSettings(QMap<QString, QString> * val) { settings = val; }
+
+		int getWeight() { return 1; }
 
 	private:
 		/**
