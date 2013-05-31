@@ -1207,7 +1207,7 @@ void CoreWindow::setRestriction_Circle(QLinkedList<osg::ref_ptr<Data::Node> > * 
         if (centerNode == NULL)
             position = viewerWidget->getPickHandler()->getSelectionCenter(true);
         else
-            position = centerNode->getTargetPosition();
+            position = centerNode->targetPosition();
 
             osg::ref_ptr<Data::Node> node1;
             osg::ref_ptr<Data::Node> node2;
@@ -1285,7 +1285,7 @@ void CoreWindow::setRestriction_Cone(QLinkedList<osg::ref_ptr<Data::Node> > * no
         nodesToRestrict->removeOne(parentNode);
 
 
-        osg::Vec3 positionCenter = parentNode->getTargetPosition() + osg::Vec3f (0, 0, (-50));
+        osg::Vec3 positionCenter = parentNode->targetPosition() + osg::Vec3f (0, 0, (-50));
 
         osg::ref_ptr<Data::Node> centernode = currentGraph->addRestrictionNode ("circle_center_node", positionCenter);
 

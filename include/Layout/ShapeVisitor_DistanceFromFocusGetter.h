@@ -36,6 +36,8 @@ public:
 	 */
     virtual void visit(Shape_Composite &shape);
 
+    virtual void visit(Shape_Intersection &shape);
+
 	/**
 	 * \brief Finds the nearest point on the plane.
 	 */

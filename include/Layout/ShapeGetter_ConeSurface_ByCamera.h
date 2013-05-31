@@ -23,6 +23,8 @@ public:
 
     virtual ~ShapeGetter_ConeSurface_ByCamera() {}
 
+    virtual QSet<Data::Node *> getNodesOfShape();
+
     virtual QSharedPointer<Shape> getShape();
 
 private:

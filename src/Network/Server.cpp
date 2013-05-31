@@ -759,7 +759,7 @@ void Server::sendSetRestriction(quint8 type, QLinkedList<osg::ref_ptr<Data::Node
 
     for (itRN = restrictionNodes->begin(); itRN!= restrictionNodes->end(); itRN++){
         out << (int) (*itRN)->getId() <<  (QString) (*itRN)->getName();
-        out<< (float) (*itRN)->getTargetPosition().x()<< (float) (*itRN)->getTargetPosition().y() << (float) (*itRN)->getTargetPosition().z();
+        out<< (float) (*itRN)->targetPosition().x()<< (float) (*itRN)->targetPosition().y() << (float) (*itRN)->targetPosition().z();
     }
 
         out << (int) nodes->count();
